@@ -26,19 +26,19 @@ class Task {
   DateTime createdAt;
 
   Task({required this.title, this.done = false, DateTime? createdAt})
-      : createdAt = createdAt ?? DateTime.now();
+    : createdAt = createdAt ?? DateTime.now();
 
   Map<String, dynamic> toJson() => {
-        'title': title,
-        'done': done,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'title': title,
+    'done': done,
+    'createdAt': createdAt.toIso8601String(),
+  };
 
   static Task fromJson(Map<String, dynamic> json) => Task(
-        title: json['title'] ?? '',
-        done: json['done'] ?? false,
-        createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
-      );
+    title: json['title'] ?? '',
+    done: json['done'] ?? false,
+    createdAt: DateTime.tryParse(json['createdAt'] ?? '') ?? DateTime.now(),
+  );
 }
 
 class HomePage extends StatefulWidget {
@@ -61,7 +61,16 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadTasks() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('tasks') ?? '[]';
-    final list = (jsonDecode(raw) as List).cast<dynamic>();
+    List<dynamic> list;
+    try {
+      list = (jsonDecode(raw) as List).cast<dynamic>();
+    } on FormatException {
+      list = [];
+    } on TypeError {
+      list = [];
+    }
+
+    if (!mounted) return;
     setState(() {
       _tasks
         ..clear()
@@ -125,13 +134,11 @@ class _HomePageState extends State<HomePage> {
           title: const Text('Nova tarefa'),
           content: TextField(
             controller: controller,
-            decoration: const InputDecoration(
-              hintText: 'Ex: Estudar 30 min',
-            ),
+            decoration: const InputDecoration(hintText: 'Ex: Estudar 30 min'),
             autofocus: true,
             onSubmitted: (_) async {
               await _addTask(controller.text);
-              if (mounted) Navigator.pop(ctx);
+              if (ctx.mounted) Navigator.pop(ctx);
             },
           ),
           actions: [
@@ -142,7 +149,7 @@ class _HomePageState extends State<HomePage> {
             FilledButton(
               onPressed: () async {
                 await _addTask(controller.text);
-                if (mounted) Navigator.pop(ctx);
+                if (ctx.mounted) Navigator.pop(ctx);
               },
               child: const Text('Adicionar'),
             ),
@@ -161,18 +168,12 @@ class _HomePageState extends State<HomePage> {
         onToggle: _toggleTask,
         onDelete: _deleteTask,
       ),
-      _StatsPage(
-        total: _totalCount,
-        done: _doneCount,
-        percent: _percent,
-      ),
+      _StatsPage(total: _totalCount, done: _doneCount, percent: _percent),
       _SmartPage(text: _recommendation()),
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('SmartRoutine'),
-      ),
+      appBar: AppBar(title: const Text('SmartRoutine')),
       body: pages[_tabIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tabIndex,
@@ -218,7 +219,7 @@ class _TasksPage extends StatelessWidget {
           ListView.separated(
             padding: const EdgeInsets.all(12),
             itemCount: tasks.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final t = tasks[index];
               return Card(
@@ -230,8 +231,7 @@ class _TasksPage extends StatelessWidget {
                   title: Text(
                     t.title,
                     style: TextStyle(
-                      decoration:
-                          t.done ? TextDecoration.lineThrough : null,
+                      decoration: t.done ? TextDecoration.lineThrough : null,
                     ),
                   ),
                   subtitle: Text(
@@ -254,7 +254,7 @@ class _TasksPage extends StatelessWidget {
             onPressed: onAdd,
             child: const Icon(Icons.add),
           ),
-        )
+        ),
       ],
     );
   }
@@ -281,22 +281,28 @@ class _StatsPage extends StatelessWidget {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Text('Total de tarefas: $total',
-                  style: const TextStyle(fontSize: 18)),
+              child: Text(
+                'Total de tarefas: $total',
+                style: const TextStyle(fontSize: 18),
+              ),
             ),
           ),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Text('Concluídas: $done',
-                  style: const TextStyle(fontSize: 18)),
+              child: Text(
+                'Concluídas: $done',
+                style: const TextStyle(fontSize: 18),
+              ),
             ),
           ),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Text('Percentual: ${percent.toStringAsFixed(0)}%',
-                  style: const TextStyle(fontSize: 18)),
+              child: Text(
+                'Percentual: ${percent.toStringAsFixed(0)}%',
+                style: const TextStyle(fontSize: 18),
+              ),
             ),
           ),
           const SizedBox(height: 16),
